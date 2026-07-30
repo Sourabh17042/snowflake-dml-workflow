@@ -62,7 +62,7 @@ jobs:
           SNF_USER_PRIVATE_KEY: ${{ secrets.SNF_USER_PRIVATE_KEY }}
           SNF_USER_PRIVATE_KEY_PASSWORD: ${{ secrets.SNF_USER_PRIVATE_KEY_PASSWORD }}
           SNOWFLAKE_WAREHOUSE: ${{secrets.SNOWFLAKE_WAREHOUSE}}
-          SNOWFLAKE_ROLE: SVC_ADHOC_DML_ROLE
+          SNOWFLAKE_ROLE: ACCOUNTADMIN
           ADDED_FILES: ${{ env.sql_files }}
           ENV_VARIABLE: DEV
         run: |
@@ -114,7 +114,7 @@ jobs:
           SNF_USER_PRIVATE_KEY: ${{ secrets.SNF_USER_PRIVATE_KEY }}
           SNF_USER_PRIVATE_KEY_PASSWORD: ${{ secrets.SNF_USER_PRIVATE_KEY_PASSWORD }}
           SNOWFLAKE_WAREHOUSE: ${{secrets.SNOWFLAKE_WAREHOUSE}}
-          SNOWFLAKE_ROLE: SVC_ADHOC_DML_ROLE
+          SNOWFLAKE_ROLE: ACCOUNTADMIN
           ADDED_FILES: ${{ env.sql_files }}
           ENV_VARIABLE: QA
         run: |
@@ -165,7 +165,7 @@ jobs:
           SNF_USER_PRIVATE_KEY: ${{ secrets.SNF_USER_PRIVATE_KEY }}
           SNF_USER_PRIVATE_KEY_PASSWORD: ${{ secrets.SNF_USER_PRIVATE_KEY_PASSWORD }}
           SNOWFLAKE_WAREHOUSE: ${{secrets.SNOWFLAKE_WAREHOUSE}}
-          SNOWFLAKE_ROLE: SVC_ADHOC_DML_ROLE
+          SNOWFLAKE_ROLE: ACCOUNTADMIN
           ADDED_FILES: ${{ env.sql_files }}
           ENV_VARIABLE: PROD
         run: |
