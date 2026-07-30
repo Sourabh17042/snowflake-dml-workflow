@@ -1,0 +1,172 @@
+name: ADHOC DML CHANGES WORKFLOW
+
+on:
+  workflow_dispatch: # Manual trigger
+    inputs:
+      ServiceNow_CR:
+        required: false
+        type: string
+        description: 'ServiceNow Change Request Number'
+      ENV:
+        required: true
+        type: choice
+        description: "environment"
+        options:
+          - "DEV"
+          - "QA"
+          - "PROD"
+  
+jobs:
+  dev_dml_changes:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.ENV == 'DEV'
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed SQL file in the DML_CHANGES folder
+      - name: Set executable permissions for the script
+        run: chmod +x .github/workflows/script/fetch_changed_files_script.sh
+
+      - name: Find latest changed json file in DML_CHANGES
+        id: get_sql_file
+        run: |
+          folder="dml_changes/dev/"
+          file_extension=".sql"
+          log_count=1
+          GITHUB_JOB="dml"
+
+          filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB", "dev")
+          if [ -z "$filtered_files" ]; then
+            echo "No sql file changes detected in DML_CHANGES."
+            echo "sql_files=[]" >> $GITHUB_ENV
+          else
+            sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "sql file found: $sql_files"
+            echo "sql_files=$sql_files" >> $GITHUB_ENV
+          fi
+
+      - name: Install python packages
+        if: ${{ env.sql_files != '[]' }}
+        run: |
+          pip install snowflake-connector-python
+      - name: Run Python Script
+        if: ${{ env.sql_files != '[]' }}
+        env:
+          SNOWFLAKE_ACCOUNT: frhobru-ihqla01
+          SNOWFLAKE_USERNAME: ${{secrets.SNOWFLAKE_USERNAME}}
+          # SNOWFLAKE_PASSWORD: ${{secrets.SNOWFLAKE_PASSWORD}}
+          SNF_USER_PRIVATE_KEY: ${{ secrets.SNF_USER_PRIVATE_KEY }}
+          SNF_USER_PRIVATE_KEY_PASSWORD: ${{ secrets.SNF_USER_PRIVATE_KEY_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{secrets.SNOWFLAKE_WAREHOUSE}}
+          SNOWFLAKE_ROLE: SVC_ADHOC_DML_ROLE
+          ADDED_FILES: ${{ env.sql_files }}
+          ENV_VARIABLE: DEV
+        run: |
+          python .github/workflows/script/dml_changes_script.py
+  
+  qa_dml_changes:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event.inputs.ENV == 'QA'
+
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed SQL file in the DML_CHANGES folder
+      - name: Set executable permissions for the script
+        run: chmod +x .github/workflows/script/fetch_changed_files_script.sh
+
+      - name: Find latest changed json file in DML_CHANGES
+        id: get_sql_file
+        run: |
+          folder="dml_changes/qa/"
+          file_extension=".sql"
+          log_count=1
+          GITHUB_JOB="dml"
+
+          filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB", "qa")
+          if [ -z "$filtered_files" ]; then
+            echo "No sql file changes detected in DML_CHANGES."
+            echo "sql_files=[]" >> $GITHUB_ENV
+          else
+            sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "sql file found: $sql_files"
+            echo "sql_files=$sql_files" >> $GITHUB_ENV
+          fi
+    
+      - name: Install python packages
+        if: ${{ env.sql_files != '[]' }}
+        run: |
+          pip install snowflake-connector-python
+      - name: Run Python Script
+        if: ${{ env.sql_files != '[]' }}
+        env:
+          SNOWFLAKE_ACCOUNT: frhobru-ihqla01
+          SNOWFLAKE_USERNAME: ${{secrets.SNOWFLAKE_USERNAME}}
+          # SNOWFLAKE_PASSWORD: ${{secrets.SNOWFLAKE_PASSWORD}}
+          SNF_USER_PRIVATE_KEY: ${{ secrets.SNF_USER_PRIVATE_KEY }}
+          SNF_USER_PRIVATE_KEY_PASSWORD: ${{ secrets.SNF_USER_PRIVATE_KEY_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{secrets.SNOWFLAKE_WAREHOUSE}}
+          SNOWFLAKE_ROLE: SVC_ADHOC_DML_ROLE
+          ADDED_FILES: ${{ env.sql_files }}
+          ENV_VARIABLE: QA
+        run: |
+          python .github/workflows/script/dml_changes_script.py
+  
+  prod_dml_changes:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event.inputs.ENV == 'PROD' && github.event.inputs.ServiceNow_CR != ''
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed SQL file in the DML_CHANGES folder
+      - name: Set executable permissions for the script
+        run: chmod +x .github/workflows/script/fetch_changed_files_script.sh
+
+      - name: Find latest changed json file in DML_CHANGES
+        id: get_sql_file
+        run: |
+          folder="dml_changes/prod/"
+          file_extension=".sql"
+          log_count=1
+          GITHUB_JOB="dml"
+
+          filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB", "prod")
+          if [ -z "$filtered_files" ]; then
+            echo "No sql file changes detected in DML_CHANGES."
+            echo "sql_files=[]" >> $GITHUB_ENV
+          else
+            sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "sql file found: $sql_files"
+            echo "sql_files=$sql_files" >> $GITHUB_ENV
+          fi
+
+      - name: Install python packages
+        if: ${{ env.sql_files != '[]' }}
+        run: |
+          pip install snowflake-connector-python
+      - name: Run Python Script
+        if: ${{ env.sql_files != '[]' }}
+        env:
+          SNOWFLAKE_ACCOUNT: frhobru-ihqla01
+          SNOWFLAKE_USERNAME: ${{secrets.SNOWFLAKE_USERNAME}}
+          # SNOWFLAKE_PASSWORD: ${{secrets.SNOWFLAKE_PASSWORD}}
+          SNF_USER_PRIVATE_KEY: ${{ secrets.SNF_USER_PRIVATE_KEY }}
+          SNF_USER_PRIVATE_KEY_PASSWORD: ${{ secrets.SNF_USER_PRIVATE_KEY_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{secrets.SNOWFLAKE_WAREHOUSE}}
+          SNOWFLAKE_ROLE: SVC_ADHOC_DML_ROLE
+          ADDED_FILES: ${{ env.sql_files }}
+          ENV_VARIABLE: PROD
+        run: |
+          python .github/workflows/script/dml_changes_script.py ${{github.event.inputs.ServiceNow_CR}}

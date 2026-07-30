@@ -1,0 +1,6 @@
+--changeset sourabh17042@gmail.com:TEST001
+
+CREATE OR REPLACE TABLE TEST_EMPLOYEE (
+    ID INT,
+    NAME STRING
+);
