@@ -146,10 +146,10 @@ def execute_sql_function(folder, files):
                 except Exception as e:
                     print(f"\t\tERROR: SQL execution failed for file {sql_file}: {e}")
                     sys.exit(1)
-                finally:
-                    conn.close()
         else:
             print(f"\tSkipping file: {sql_file} (Not an SQL file)")
+
+    conn.close()
 
 
 def validate_changes_yml(changes_yml_path, file_list):
