@@ -2,6 +2,6 @@
 
 INSERT INTO TEST_EMPLOYEE (ID, NAME)
 VALUES
-(1, 'John');
+(1, 'John_Doe');
 
 INSERT INTO TEST_EMPLOYEE VALUES (100, 'Feature Branch');
