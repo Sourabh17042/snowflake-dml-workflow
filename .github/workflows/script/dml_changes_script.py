@@ -23,6 +23,8 @@ def get_connection():
             account=account,
             role=role,
             warehouse=warehouse,
+            database="DEV_SECURITY",
+            schema="SNF_MANAGEMENT",
             private_key=private_key,
         )
 
