@@ -38,10 +38,27 @@ def execute_sql_function(folder, files):
     print(
         f"\nHello! Executing SQL function for folder '{folder}' with the following files:")
     cursor = conn.cursor()
+
+    # Query and log current database, schema, and role
+    try:
+        ctx_sql = "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_ROLE()"
+        print(f"[DEBUG] Executing SQL statement: {ctx_sql}")
+        cursor.execute(ctx_sql)
+        current_db, current_schema, current_role = cursor.fetchone()
+        print(f"[DEBUG] Current Session Context -> Database: '{current_db}', Schema: '{current_schema}', Role: '{current_role}'")
+    except Exception as e:
+        print(f"[ERROR] SQL execution failed for statement '{ctx_sql}': {e}")
+        sys.exit(1)
+
     sql = f"Select FILENAME from {env}_SECURITY.SNF_MANAGEMENT.ADHOC_DML_CHANGELOG"
-    sql_files = cursor.execute(sql)
-    executed_sql_files = sql_files.fetchall()
-    executed_sql_files = [row[0] for row in executed_sql_files]
+    print(f"[DEBUG] Executing SQL statement: {sql}")
+    try:
+        sql_files = cursor.execute(sql)
+        executed_sql_files = sql_files.fetchall()
+        executed_sql_files = [row[0] for row in executed_sql_files]
+    except Exception as e:
+        print(f"[ERROR] SQL execution failed for statement '{sql}': {e}")
+        sys.exit(1)
 
     for i, sql_file in enumerate(files, 1):
 
@@ -51,17 +68,21 @@ def execute_sql_function(folder, files):
 
         if sql_file.lower().endswith('.sql'):
             print(f"\t{i}. {sql_file}")
+            print(f"[DEBUG] SQL file path: {sql_file}")
 
             if sql_file not in executed_sql_files:
                 try:
-                    with open(sql_file, 'r+') as file:
+                    with open(sql_file, 'r') as file:
+                        raw_sql_content = file.read()
+                        file.seek(0)
                         sql_content = file.readlines()
                         changeset_value = sql_content[:1]
                         remaining_sql_content = sql_content[1:]
+                    print(f"[DEBUG] Raw SQL content of file '{sql_file}':\n{raw_sql_content}")
                 except Exception as e:
-                    print(f"\tERROR: Unable to read file {sql_file}: {e}")
+                    print(f"[ERROR] Unable to read file {sql_file}: {e}")
                     sys.exit(1)
-                changeset_value = changeset_value[0]
+                changeset_value = changeset_value[0] if changeset_value else ""
                 pattern = r'--changeset\s([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\:(.+)'
                 match = re.search(pattern, changeset_value)
 
@@ -98,15 +119,32 @@ def execute_sql_function(folder, files):
                         sql_commands.append(current_command.strip())
                         current_command = ""  # Reset for the next command
 
+                print(f"[DEBUG] Parsed SQL statements before execution for file '{sql_file}':")
+                for cmd_idx, cmd in enumerate(sql_commands, 1):
+                    print(f"[DEBUG]   [{cmd_idx}] {cmd}")
+                if insert_statement:
+                    print(f"[DEBUG]   [Changelog Insert] {insert_statement}")
+
                 try:
                     with conn.cursor() as cursor:
                         for command in sql_commands:
-                            cursor.execute(command)
-                            print("\t\tSQL command executed successfully.")
+                            print(f"[DEBUG] Executing SQL statement: {command}")
+                            try:
+                                cursor.execute(command)
+                                print("\t\tSQL command executed successfully.")
+                            except Exception as e:
+                                print(f"[ERROR] SQL execution failed for statement: '{command}': {e}")
+                                raise e
                         if insert_statement:
-                            cursor.execute(insert_statement)
+                            print(f"[DEBUG] Executing SQL statement: {insert_statement}")
+                            try:
+                                cursor.execute(insert_statement)
+                                print("\t\tChangelog insert statement executed successfully.")
+                            except Exception as e:
+                                print(f"[ERROR] SQL execution failed for statement: '{insert_statement}': {e}")
+                                raise e
                 except Exception as e:
-                    print(f"\t\tERROR: SQL execution failed: {e}")
+                    print(f"\t\tERROR: SQL execution failed for file {sql_file}: {e}")
                     sys.exit(1)
                 finally:
                     conn.close()
