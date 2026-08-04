@@ -2,5 +2,5 @@
 
 -- Updated for workflow execution testing
 UPDATE TEST_EMPLOYEE
-SET NAME = 'Bob_Updated_v2'
+SET NAME = 'System_updated_v4'
 WHERE ID = 1;
