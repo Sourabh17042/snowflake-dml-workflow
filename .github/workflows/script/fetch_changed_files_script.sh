@@ -52,4 +52,4 @@ filtered_files=$(echo "$unique_files" | grep -E "$folder.*$file_extension" | sor
 
 # filtered_files=$(echo "$unique_files" | grep -E "dml_changes/$env/.*\.sql" | sort -u || true)
 
-echo $filtered_files
+printf "%s\n" "$filtered_files"
